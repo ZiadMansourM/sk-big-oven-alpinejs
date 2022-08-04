@@ -21,7 +21,7 @@
     <div 
         class="container d-flex flex-column min-vh-100 p-3"
         x-data="state()"
-        x-init="loadCategories()"
+        x-init="loadCategories(); loadRecipes();"
     >
         <nav class="navbar navbar-expand-md navbar-dark">
             <div class="col text-start">
@@ -75,14 +75,17 @@
                 return {
                     open: 'home',
                     categories: [],
+                    recipes: [],
+                    baseAddress: '@Program.config["BaseAddress"]',
                     activeCategory: { id: '', name: '' },
+                    activeRecipe: { id: '', name: '', ingredients: [], instructions: [], categoriesIds: [] },
                     loadCategories() {
-                        fetch('http://localhost:5144/categories')
+                        fetch(`${this.baseAddress}/categories`)
                             .then(res => res.json())
                             .then(categories => this.categories = categories)
                     },
                     createCategories() {
-                        fetch('http://localhost:5144/categories', {
+                        fetch(`${this.baseAddress}/categories`, {
                             method: 'POST',
                             headers: { 
                                 'Content-Type': 'application/json'
@@ -99,7 +102,7 @@
                         this.cleanActiveCategory();
                     },
                     deleteCategory() {
-                        fetch(`http://localhost:5144/categories/${this.activeCategory.id}`, {
+                        fetch(`${this.baseAddress}/categories/${this.activeCategory.id}`, {
                             method: 'DELETE',
                             headers: { 
                                 'Content-Type': 'application/json'
@@ -118,7 +121,7 @@
                         this.cleanActiveCategory();
                     },
                     updateCategory() {
-                        fetch(`http://localhost:5144/categories/${this.activeCategory.id}`, {
+                        fetch(`${this.baseAddress}/categories/${this.activeCategory.id}`, {
                             method: 'PUT',
                             headers: { 
                                 'Content-Type': 'application/json'
@@ -141,7 +144,22 @@
                         this.activeCategory.id=category.id; 
                         this.activeCategory.name=category.name;
                     },
-                    cleanActiveCategory() { this.activeCategory={ id: '', name: '' } }
+                    cleanActiveCategory() { this.activeCategory={ id: '', name: '' } },
+                    loadRecipes() {
+                        fetch(`${this.baseAddress}/recipes`)
+                            .then(res => res.json())
+                            .then(recipes => this.recipes = recipes);
+                    },
+                    cleanActiveRecipe() { 
+                        this.activeRecipe={ id: '', name: '', ingredients: [], instructions: [], categoriesIds: [] } 
+                    },
+                    initActiveRecipe(recipe) {
+                        this.activeRecipe.id=recipe.id;
+                        this.activeRecipe.name=recipe.name;
+                        this.activeRecipe.ingredients=recipe.ingredients;
+                        this.activeRecipe.instructions=recipe.instructions;
+                        this.activeRecipe.categoriesIds=recipe.categoriesIds;
+                    }
                 }
             }
         </script>
