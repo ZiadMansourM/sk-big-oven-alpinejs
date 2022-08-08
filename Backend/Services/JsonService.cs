@@ -118,6 +118,7 @@ public class JsonService
     {
         var jsonString = ReadCategories();
         var categories = JsonSerializer.Deserialize<List<Models.Category>>(jsonString)!;
+        categories.Sort((a, b) => a.Name.CompareTo(b.Name));
         return categories;
     }
 
@@ -125,6 +126,7 @@ public class JsonService
     {
         var jsonString = ReadRecipes();
         var recipes = JsonSerializer.Deserialize<List<Models.Recipe>>(jsonString)!;
+        recipes.Sort((a, b) => a.Name.CompareTo(b.Name));
         return recipes;
     }
 
