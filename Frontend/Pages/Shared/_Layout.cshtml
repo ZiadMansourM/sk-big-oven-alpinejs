@@ -76,68 +76,70 @@
                     open: 'home',
                     categories: [],
                     recipes: [],
+                    errMsgs: [],
                     baseAddress: '@Program.config["BaseAddress"]',
                     activeCategory: { id: '', name: '' },
                     activeRecipe: { id: '', name: '', ingredients: [], instructions: [], categoriesIds: [] },
-                    loadCategories() {
-                        fetch(`${this.baseAddress}/categories`)
-                            .then(res => res.json())
-                            .then(categories => this.categories = categories)
+                    async loadCategories() {
+                        let response = await fetch(`${this.baseAddress}/categories`);
+                        if (!response.ok) {
+                            const message = `An error has occured: ${response.status}`;
+                            console.log(message);
+                            throw new Error(message);
+                        }
+                        let categories = await response.json();
+                        this.categories = categories;
                     },
-                    createCategories() {
-                        fetch(`${this.baseAddress}/categories`, {
+                    async createCategories() {
+                        let response = await fetch(`${this.baseAddress}/categories`, {
                             method: 'POST',
-                            headers: { 
+                            headers: {
                                 'Content-Type': 'application/json'
                             },
                             body: JSON.stringify(this.activeCategory.name)
-                        })
-                        .then(response => {
-                            if (response.ok)
-                                return response.json();
-                            throw new Error('Error ...');
-                        })
-                        .then(jsonResponse => this.categories.push(jsonResponse))
-                        .catch(err => console.log(err));
+                        });
+                        if (!response.ok) {
+                            if (response.status != 400)
+                            {
+                                const message = `An error has occured: ${response.status}`;
+                                console.log(message);
+                                throw new Error(message);
+                            }
+                            let msgs = await response.json()
+                            this.errMsgs = msgs;
+                        }
+                        this.loadCategories();
                         this.cleanActiveCategory();
                     },
-                    deleteCategory() {
-                        fetch(`${this.baseAddress}/categories/${this.activeCategory.id}`, {
+                    async deleteCategory() {
+                        let response = await fetch(`${this.baseAddress}/categories/${this.activeCategory.id}`, {
                             method: 'DELETE',
                             headers: { 
                                 'Content-Type': 'application/json'
                             }
-                        })
-                        .then(response => {
-                            if (response.ok)
-                                return response.json();
-                            throw new Error('Error ...');
-                        })
-                        .then(jsonResponse => console.log(jsonResponse))
-                        .catch(err => console.log(err));
-                        var found = this.categories.find(category => { return category.id == this.activeCategory.id });
-                        if(found)
-                            this.categories.splice(this.categories.indexOf(found), 1);
+                        });
+                        if (!response.ok) {
+                            const message = `An error has occured: ${response.status}`;
+                            console.log(message);
+                            throw new Error(message);
+                        }
+                        this.loadCategories();
                         this.cleanActiveCategory();
                     },
-                    updateCategory() {
-                        fetch(`${this.baseAddress}/categories/${this.activeCategory.id}`, {
+                    async updateCategory() {
+                        let response = await fetch(`${this.baseAddress}/categories/${this.activeCategory.id}`, {
                             method: 'PUT',
                             headers: { 
                                 'Content-Type': 'application/json'
                             },
                             body: JSON.stringify(this.activeCategory)
-                        })
-                        .then(response => {
-                            if (response.ok)
-                                return response.json();
-                            throw new Error('Error ...');
-                        })
-                        .then(jsonResponse => console.log(jsonResponse))
-                        .catch(err => console.log(err));
-                        var found = this.categories.find(category => { return category.id == this.activeCategory.id });
-                        if(found)
-                            this.categories.splice(this.categories.indexOf(found), 1, this.activeCategory);
+                        });
+                        if (!response.ok) {
+                            const message = `An error has occured: ${response.status}`;
+                            console.log(message);
+                            throw new Error(message);
+                        }
+                        this.loadCategories();
                         this.cleanActiveCategory();
                     },
                     initActiveCategory(category) {
@@ -145,20 +147,48 @@
                         this.activeCategory.name=category.name;
                     },
                     cleanActiveCategory() { this.activeCategory={ id: '', name: '' } },
-                    loadRecipes() {
-                        fetch(`${this.baseAddress}/recipes`)
-                            .then(res => res.json())
-                            .then(recipes => this.recipes = recipes);
+                    async loadRecipes() {
+                        let response = await fetch(`${this.baseAddress}/recipes`);
+                        if (!response.ok) {
+                            const message = `An error has occured: ${response.status}`;
+                            console.log(message);
+                            throw new Error(message);
+                        }
+                        let recipes = await response.json();
+                        this.recipes = recipes;
                     },
                     cleanActiveRecipe() { 
-                        this.activeRecipe={ id: '', name: '', ingredients: [], instructions: [], categoriesIds: [] } 
+                        this.activeRecipe={ 
+                            id: '', name: '', ingredients: [], instructions: [], categoriesIds: [],
+                            categoriesIdsLength: '', instructionsLength: '', ingredientsLength: ''
+                        } 
                     },
                     initActiveRecipe(recipe) {
                         this.activeRecipe.id=recipe.id;
                         this.activeRecipe.name=recipe.name;
-                        this.activeRecipe.ingredients=recipe.ingredients;
-                        this.activeRecipe.instructions=recipe.instructions;
-                        this.activeRecipe.categoriesIds=recipe.categoriesIds;
+                        @* Ingredients *@
+                        let ingStr = '';
+                        for(let i = 0; i < recipe.ingredients.length; i++)
+                            ingStr += "- " + recipe.ingredients[i];
+                        this.activeRecipe.ingredients=ingStr;
+                        this.activeRecipe.ingredientsLength=recipe.ingredients.length;
+                        @* Instructions *@
+                        let insStr = '';
+                        for(let i = 0; i < recipe.instructions.length; i++)
+                            insStr += "- " + recipe.instructions[i];
+                        this.activeRecipe.instructions=insStr;
+                        this.activeRecipe.instructionsLength=recipe.instructions.length;
+                        @* categoriesIds *@
+                        this.loadCategories();
+                        let catStr = '';
+                        for(let i = 0; i < recipe.categoriesIds.length-1; i++)
+                            catStr += "- " + this.categories.find(c => c.id === recipe.categoriesIds[i]).name + "\r";
+                        catStr += "- " + this.categories.find(c => c.id === recipe.categoriesIds[recipe.categoriesIds.length-1]).name
+                        console.log(recipe.categoriesIds);
+                        console.log(this.categories);
+                        console.log(catStr);
+                        this.activeRecipe.categoriesIds=catStr;
+                        this.activeRecipe.categoriesIdsLength=recipe.categoriesIds.length;
                     }
                 }
             }
