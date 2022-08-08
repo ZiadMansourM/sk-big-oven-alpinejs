@@ -73,13 +73,20 @@
         <script>
             function state() {
                 return {
-                    open: 'home',
-                    categories: [],
-                    recipes: [],
-                    errMsgs: [],
                     baseAddress: '@Program.config["BaseAddress"]',
+                    open: 'home',
+                    errMsgs: [],
+                    categories: [],
                     activeCategory: { id: '', name: '' },
-                    activeRecipe: { id: '', name: '', ingredients: [], instructions: [], categoriesIds: [] },
+                    recipes: [],
+                    activeRecipe: { 
+                        id: '', name: '', ingredients: [], instructions: [], categoriesIds: [],
+                        strCategoriesNames: '', ingredientsLength: '', instructionsLength: '',
+                        categoriesIdsLength: ''
+                    },
+                    sendRecipe: { id: '', name: '', ingredients: [], instructions: [], categoriesIds: [] },
+                    catNameGuid: {},
+                    catGuidName: {},
                     async loadCategories() {
                         let response = await fetch(`${this.baseAddress}/categories`);
                         if (!response.ok) {
@@ -89,6 +96,10 @@
                         }
                         let categories = await response.json();
                         this.categories = categories;
+                        for(let i = 0; i < this.categories.length; i++) {
+                            this.catGuidName[categories[i].id]=categories[i].name;
+                            this.catNameGuid[categories[i].name]=categories[i].id;
+                        }
                     },
                     async createCategories() {
                         let response = await fetch(`${this.baseAddress}/categories`, {
@@ -157,38 +168,98 @@
                         let recipes = await response.json();
                         this.recipes = recipes;
                     },
+                    async updateRecipe() {
+                        @* ingredients *@
+                        this.activeRecipe.ingredients = this.activeRecipe.ingredients.split("- ").slice(1).map(e => e.trim());
+                        @* instructions *@
+                        this.activeRecipe.instructions = this.activeRecipe.instructions.split("- ").slice(1).map(e => e.trim());
+                        this.initSendRecipe();
+                        let response = await fetch(`${this.baseAddress}/recipes/${this.sendRecipe.id}`, {
+                            method: 'PUT',
+                            headers: { 
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify(this.sendRecipe)
+                        });
+                        if (!response.ok) {
+                            if (response.status != 400)
+                            {
+                                const message = `An error has occured: ${response.status}`;
+                                console.log(message);
+                                throw new Error(message);
+                            }
+                            let msgs = await response.json()
+                            this.errMsgs = msgs;
+                        }
+                        this.loadRecipes();
+                        this.cleanActiveRecipe();
+                    },
+                    async createRecipe() {
+                        @* ingredients *@
+                        this.activeRecipe.ingredients = this.activeRecipe.ingredients.split("- ").slice(1).map(e => e.trim());
+                        @* instructions *@
+                        this.activeRecipe.instructions = this.activeRecipe.instructions.split("- ").slice(1).map(e => e.trim());
+                        this.initSendRecipe();
+                        let response = await fetch(`${this.baseAddress}/recipes`, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify(this.sendRecipe)
+                        });
+                        if (!response.ok) {
+                            if (response.status != 400)
+                            {
+                                const message = `An error has occured: ${response.status}`;
+                                console.log(message);
+                                throw new Error(message);
+                            }
+                            let msgs = await response.json()
+                            this.errMsgs = msgs;
+                        }
+                        this.loadRecipes();
+                        this.cleanActiveRecipe();
+                    },
                     cleanActiveRecipe() { 
                         this.activeRecipe={ 
                             id: '', name: '', ingredients: [], instructions: [], categoriesIds: [],
-                            categoriesIdsLength: '', instructionsLength: '', ingredientsLength: ''
-                        } 
+                            strCategoriesNames: '', ingredientsLength: '', instructionsLength: '',
+                            categoriesIdsLength: ''
+                        }
                     },
                     initActiveRecipe(recipe) {
                         this.activeRecipe.id=recipe.id;
                         this.activeRecipe.name=recipe.name;
                         @* Ingredients *@
                         let ingStr = '';
-                        for(let i = 0; i < recipe.ingredients.length; i++)
-                            ingStr += "- " + recipe.ingredients[i];
+                        for(let i = 0; i < recipe.ingredients.length-1; i++)
+                            ingStr += "- " + recipe.ingredients[i] + "\r";
+                        ingStr += "- " + recipe.ingredients[recipe.ingredients.length-1];
                         this.activeRecipe.ingredients=ingStr;
                         this.activeRecipe.ingredientsLength=recipe.ingredients.length;
                         @* Instructions *@
                         let insStr = '';
-                        for(let i = 0; i < recipe.instructions.length; i++)
-                            insStr += "- " + recipe.instructions[i];
+                        for(let i = 0; i < recipe.instructions.length-1; i++)
+                            insStr += "- " + recipe.instructions[i] + "\r";
+                        insStr += "- " + recipe.instructions[recipe.instructions.length-1];
                         this.activeRecipe.instructions=insStr;
                         this.activeRecipe.instructionsLength=recipe.instructions.length;
                         @* categoriesIds *@
+                        this.activeRecipe.categoriesIds=recipe.categoriesIds;
                         this.loadCategories();
                         let catStr = '';
                         for(let i = 0; i < recipe.categoriesIds.length-1; i++)
-                            catStr += "- " + this.categories.find(c => c.id === recipe.categoriesIds[i]).name + "\r";
-                        catStr += "- " + this.categories.find(c => c.id === recipe.categoriesIds[recipe.categoriesIds.length-1]).name
-                        console.log(recipe.categoriesIds);
-                        console.log(this.categories);
-                        console.log(catStr);
-                        this.activeRecipe.categoriesIds=catStr;
+                            catStr += "- " + this.catGuidName[recipe.categoriesIds[i]] + "\r";
+                        catStr += "- " + this.catGuidName[recipe.categoriesIds[recipe.categoriesIds.length-1]];
                         this.activeRecipe.categoriesIdsLength=recipe.categoriesIds.length;
+                        this.activeRecipe.strCategoriesNames=catStr;
+                    },
+                    initSendRecipe() {
+                        this.sendRecipe.id=this.activeRecipe.id;
+                        this.sendRecipe.name=this.activeRecipe.name;
+                        this.sendRecipe.ingredients=this.activeRecipe.ingredients;
+                        this.sendRecipe.instructions=this.activeRecipe.instructions;
+                        this.sendRecipe.categoriesIds=this.activeRecipe.categoriesIds;
                     }
                 }
             }

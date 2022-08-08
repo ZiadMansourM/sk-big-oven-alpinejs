@@ -89,25 +89,25 @@ public static class Recipe
         return Results.Json(_service.ListRecipes(), statusCode: 200);
     }
 
-    private static IResult CreateRecipe([FromBody] Backend.Models.Recipe recipe)
+    private static IResult CreateRecipe([FromBody] (string name, List<string> ingredients, List<string> instructions, List<Guid> categoriesIds) param)
     {
         Backend.Models.RecipeValidator validator = new();
         ValidationResult results = validator.Validate(
             new Backend.Models.Recipe(
-                recipe.Name,
-                recipe.Ingredients,
-                recipe.Instructions,
-                recipe.CategoriesIds
+                param.name,
+                param.ingredients,
+                param.instructions,
+                param.categoriesIds
             )
         );
         if (results.IsValid)
         {
             return Results.Json(
                 _service.CreateRecipe(
-                    recipe.Name,
-                    recipe.Ingredients,
-                    recipe.Instructions,
-                    recipe.CategoriesIds
+                    param.name,
+                    param.ingredients,
+                    param.instructions,
+                    param.categoriesIds
                 ),
                 statusCode: 200
             );
