@@ -200,6 +200,7 @@
                         @* instructions *@
                         this.activeRecipe.instructions = this.activeRecipe.instructions.split("- ").slice(1).map(e => e.trim());
                         this.initSendRecipe();
+                        this.sendRecipe.id = '5bce2199-e099-4630-bd1d-1521bc4c368a';
                         let response = await fetch(`${this.baseAddress}/recipes`, {
                             method: 'POST',
                             headers: {
@@ -216,6 +217,21 @@
                             }
                             let msgs = await response.json()
                             this.errMsgs = msgs;
+                        }
+                        this.loadRecipes();
+                        this.cleanActiveRecipe();
+                    },
+                    async deleteRecipe() {
+                        let response = await fetch(`${this.baseAddress}/recipes/${this.activeRecipe.id}`, {
+                            method: 'DELETE',
+                            headers: { 
+                                'Content-Type': 'application/json'
+                            }
+                        });
+                        if (!response.ok) {
+                            const message = `An error has occured: ${response.status}`;
+                            console.log(message);
+                            throw new Error(message);
                         }
                         this.loadRecipes();
                         this.cleanActiveRecipe();
